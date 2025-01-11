@@ -40,7 +40,34 @@ public class CategoriaController : ControllerBase
         return categoria;
     }
 
-    [HttpDelete]
+    [HttpPatch("{codigoCategoria}")]
+    public IActionResult Patch(int codigoCategoria, [FromBody] Categoria categoriaAtualizada)
+    {
+        var categoriaExistente = _context.Categoria.FirstOrDefault(c => c.Codigo == codigoCategoria);
+
+        if (categoriaExistente == null)
+        {
+            return NotFound(new { mensagem = "Categoria não encontrada." });
+        }
+
+        categoriaExistente.Titulo = categoriaAtualizada.Titulo ?? categoriaExistente.Titulo;
+        categoriaExistente.Descricao = categoriaAtualizada.Descricao ?? categoriaExistente.Descricao;
+
+        try
+        {
+            _context.Entry(categoriaExistente).State = EntityState.Modified;
+            _context.SaveChanges();
+        }
+        catch (DbUpdateException ex)
+        {
+            return BadRequest(new { mensagem = "Erro ao atualizar a categoria.", detalhes = ex.Message });
+        }
+
+        return Ok(categoriaExistente);
+    }
+
+
+    [HttpDelete("{codigoCategoria}")]
     public void Delete(int codigoCategoria)
     {
         var categoria = _context.Categoria.FirstOrDefault(a => a.Codigo == codigoCategoria);
