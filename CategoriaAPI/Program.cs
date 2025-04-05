@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using CategoriaAPI.Context;
 using CategoriaAPI.Models;
+using CategoriaAPI.Repositories;
 
 namespace StarburgerAPI
 {
@@ -23,12 +24,19 @@ namespace StarburgerAPI
                 });
             });
 
+            builder.WebHost.UseIISIntegration();
+
             string mySqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<CategoriaAPIContext>(options =>
                 options.UseMySql(mySqlConnection, ServerVersion.AutoDetect(mySqlConnection)));
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+            builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
+
+            builder.Services.AddMemoryCache();
 
             var app = builder.Build();
 

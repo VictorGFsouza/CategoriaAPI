@@ -1,5 +1,6 @@
 using CategoriaAPI.Context;
 using CategoriaAPI.Models;
+using CategoriaAPI.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,57 +11,40 @@ namespace CategoriasAPI.Controllers;
 [ApiController]
 public class CategoriaController : ControllerBase
 {
-    private readonly CategoriaAPIContext _context;
-    public CategoriaController(CategoriaAPIContext context)
+    private readonly ICategoriaRepository _repository;
+    public CategoriaController(ICategoriaRepository repository)
     {
-        _context = context;
+        _repository = repository;
     }
 
     [HttpGet]
     public ActionResult<IEnumerable<Categoria>> Get(string? titulo)
     {
-        var itens = _context.Categoria.ToList();
+        var itens = _repository.GetCategorias(titulo).ToList();
 
-        if (titulo != null)
-        {
-            itens = itens.Where(a => a.Titulo.ToUpper().Contains(titulo.ToUpper())).ToList();
-        }
         if (itens is null)
         {
             return NotFound();
         }
-        return itens;
+
+        return Ok(itens);
     }
 
     [HttpPost]
     public ActionResult<Categoria> Post([FromBody] Categoria categoria)
     {
-        var createdPedido = _context.Categoria.Add(categoria);
-        _context.SaveChanges();
-        return categoria;
+        var createdPedido = _repository.Create(categoria);
+        return Ok(createdPedido);
     }
 
     [HttpPatch("{codigoCategoria}")]
     public IActionResult Patch(int codigoCategoria, [FromBody] Categoria categoriaAtualizada)
     {
-        var categoriaExistente = _context.Categoria.FirstOrDefault(c => c.Codigo == codigoCategoria);
+        var categoriaExistente = _repository.Update(codigoCategoria, categoriaAtualizada);
 
         if (categoriaExistente == null)
         {
             return NotFound(new { mensagem = "Categoria não encontrada." });
-        }
-
-        categoriaExistente.Titulo = categoriaAtualizada.Titulo ?? categoriaExistente.Titulo;
-        categoriaExistente.Descricao = categoriaAtualizada.Descricao ?? categoriaExistente.Descricao;
-
-        try
-        {
-            _context.Entry(categoriaExistente).State = EntityState.Modified;
-            _context.SaveChanges();
-        }
-        catch (DbUpdateException ex)
-        {
-            return BadRequest(new { mensagem = "Erro ao atualizar a categoria.", detalhes = ex.Message });
         }
 
         return Ok(categoriaExistente);
@@ -70,11 +54,6 @@ public class CategoriaController : ControllerBase
     [HttpDelete("{codigoCategoria}")]
     public void Delete(int codigoCategoria)
     {
-        var categoria = _context.Categoria.FirstOrDefault(a => a.Codigo == codigoCategoria);
-        if (categoria != null)
-        {
-            _context.Categoria.Remove(categoria);
-        }
-        _context.SaveChanges(); ;
+        _repository.Delete(codigoCategoria);
     }
 }
